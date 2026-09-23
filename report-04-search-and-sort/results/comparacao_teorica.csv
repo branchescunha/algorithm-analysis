@@ -1,0 +1,5 @@
+k,n_inicial,existentes,novos,seq_teorico,seq_observado,bin_observado,bin_limite_superior,seq_diferenca
+10,1000,5,5,5025,5025,99,100,0
+20,1000,10,10,10100,10100,191,200,0
+40,1000,20,20,20400,20400,377,400,0
+80,1000,40,40,41600,41600,743,836,0

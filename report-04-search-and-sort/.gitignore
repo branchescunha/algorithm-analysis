@@ -1,0 +1,6 @@
+*.exe
+*.o
+*.out
+__pycache__/
+cnes_estabelecimentos.csv
+results/destino_temporario.csv
