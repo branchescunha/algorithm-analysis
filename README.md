@@ -103,60 +103,42 @@ Nos experimentos foi utilizado `Q = 1`.
 
 Comparação teórica e experimental de algoritmos de busca e ordenação aplicados à detecção de registros duplicados em uma base pública do **Cadastro Nacional de Estabelecimentos de Saúde — CNES**.
 
-A coluna utilizada como chave foi `CO_UNIDADE`, por apresentar valores únicos e não estar ordenada no arquivo original.
+A chave utilizada é `CO_UNIDADE`. A validação sobre a base integral confirmou **636.647 valores únicos em 636.647 registros** e ausência de ordenação crescente ou decrescente.
 
-Foram implementadas quatro versões:
+Foram implementados:
 
-| Algoritmo | Temporal | Espaço adicional |
-| --- | --- | --- |
-| Busca sequencial iterativa | Θ(N) | Θ(1) |
-| Busca sequencial recursiva | Θ(N) | Θ(N) |
-| Busca binária iterativa | Θ(log N) | Θ(1) |
-| Busca binária recursiva | Θ(log N) | Θ(log N) |
-
-O vetor utilizado pela busca binária é previamente ordenado em memória RAM com **MergeSort**:
-
-```text
-T(N) = 2T(N/2) + Θ(N)
-```
-
-resultando em:
-
-```text
-Θ(N log N)
-```
-
-O arquivo CSV físico permanece desordenado; apenas o índice mantido em memória é ordenado.
+| Algoritmo | Tempo | Espaço auxiliar |
+| --- | ---: | ---: |
+| Busca sequencial iterativa | `Θ(N)` | `Θ(1)` |
+| Busca sequencial recursiva | `Θ(N)` | `Θ(N)` |
+| MergeSort iterativo | `Θ(N log N)` | `Θ(N)` |
+| MergeSort recursivo | `Θ(N log N)` | `Θ(N)` |
+| Busca binária iterativa | `Θ(log N)` | `Θ(1)` |
+| Busca binária recursiva | `Θ(log N)` | `Θ(log N)` |
 
 ### Validação experimental
 
-O experimento principal utilizou uma base inicial com:
+O workload principal utiliza uma base inicial com **10.000 registros** e lotes de `10`, `40`, `100`, `300`, `500`, `1000`, `2500` e `5000` registros, sempre com metade duplicados e metade novos.
+
+Para a busca sequencial, com `M=10.000` fixo e `N` representando o tamanho do lote:
 
 ```text
-N = 1000
+T(N) = (N/2)M + N²/4
 ```
 
-Para cada valor de `K`, metade dos registros já existia e metade era nova.
+Os valores teóricos coincidiram exatamente com os observados em todos os cenários. No maior lote (`N=5000`), a busca sequencial executou **31.250.000 comparações**, enquanto a busca binária executou **65.308**, abaixo do limite teórico de **70.000**.
 
-| K | Sequencial observado | Binária observada |
-| ---: | ---: | ---: |
-| 10 | 5.025 | 99 |
-| 20 | 10.100 | 191 |
-| 40 | 20.400 | 377 |
-| 80 | 41.600 | 743 |
-
-Na busca sequencial, os resultados observados coincidiram exatamente com o modelo teórico.
-
-Também foi realizado um experimento variando `N` para demonstrar diretamente o crescimento dos algoritmos:
+No experimento que varia o tamanho da estrutura, uma chave ausente produziu:
 
 | N | Sequencial | Binária |
 | ---: | ---: | ---: |
 | 125 | 125 | 7 |
-| 250 | 250 | 8 |
 | 500 | 500 | 9 |
 | 1000 | 1000 | 10 |
+| 5000 | 5000 | 13 |
+| 10000 | 10000 | 14 |
 
-Quando `N` dobra, a busca sequencial também dobra seu número de comparações, enquanto a busca binária acrescenta aproximadamente uma comparação.
+Isso torna visível a diferença entre crescimento `Θ(N)` e `Θ(log N)`.
 
 <p align="center">
   <img src="./report-04-search-and-sort/charts/teoria_vs_experimento_k.png" width="48%">
@@ -167,36 +149,7 @@ Quando `N` dobra, a busca sequencial também dobra seu número de comparações,
   <img src="./report-04-search-and-sort/charts/tempos_algoritmos.png" width="60%">
 </p>
 
-### Executando o Relatório 04
-
-Acesse o diretório:
-
-```powershell
-cd .\report-04-search-and-sort
-```
-
-Compile:
-
-```powershell
-gcc -std=c11 -Wall -Wextra -Wpedantic -O0 .\src\seq_iterativa.c -o seq_iterativa
-gcc -std=c11 -Wall -Wextra -Wpedantic -O0 .\src\seq_recursiva.c -o seq_recursiva
-gcc -std=c11 -Wall -Wextra -Wpedantic -O0 .\src\bin_iterativa.c -o bin_iterativa
-gcc -std=c11 -Wall -Wextra -Wpedantic -O0 .\src\bin_recursiva.c -o bin_recursiva
-```
-
-Execute os experimentos:
-
-```powershell
-python.exe .\scripts\benchmark.py
-python.exe .\scripts\benchmark_crescimento.py
-python.exe .\scripts\plot.py
-```
-
-Os detalhes completos de preparação dos dados, compilação, execução e metodologia estão disponíveis em:
-
-```text
-report-04-search-and-sort/README.md
-```
+Os detalhes de metodologia, preparação dos dados, compilação, execução e resultados estão em `report-04-search-and-sort/README.md`.
 
 ---
 

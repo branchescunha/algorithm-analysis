@@ -7,7 +7,7 @@ import subprocess
 BASE_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = BASE_DIR / 'data'
 RESULTS_DIR = BASE_DIR / 'results'
-TAMANHOS = [10, 20, 40, 80]
+TAMANHOS = [10, 40, 100, 300, 500, 1000, 2500, 5000]
 REPETICOES = 20
 
 PROGRAMAS = {

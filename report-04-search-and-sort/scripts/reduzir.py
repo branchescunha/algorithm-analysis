@@ -23,7 +23,7 @@ def main():
     if df[CHAVE].is_monotonic_increasing or df[CHAVE].is_monotonic_decreasing:
         raise ValueError(f'A coluna {CHAVE} esta ordenada no arquivo original.')
 
-    amostra = df.sample(n=1000, random_state=42)
+    amostra = df.sample(n=10000, random_state=42)
     DEST.parent.mkdir(exist_ok=True)
     amostra.to_csv(DEST, index=False, sep=';', encoding='utf-8')
 

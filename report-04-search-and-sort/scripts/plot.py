@@ -15,7 +15,7 @@ def main():
     df = pd.read_csv(RESULTS)
 
     # Assumptions used in the K-sized insertion experiments.
-    n0 = 1000
+    n0 = 10000
     comparacao = pd.DataFrame({
         'k': df['k'],
         'n_inicial': n0,
@@ -78,7 +78,7 @@ def main():
     plt.yscale('log')
     plt.xlabel('Quantidade de registros de entrada (K)')
     plt.ylabel('Comparações de CO_UNIDADE')
-    plt.title('Teoria × experimento com N inicial = 1000 e 50% de duplicatas')
+    plt.title('Teoria × experimento com N inicial = 10000 e 50% de duplicatas')
     plt.grid(True, which='both', linestyle='--', alpha=0.5)
     plt.legend()
     plt.tight_layout()

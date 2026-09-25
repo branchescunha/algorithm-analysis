@@ -6,7 +6,7 @@ SOURCE = BASE_DIR / 'cnes_estabelecimentos.csv'
 BASE = BASE_DIR / 'data' / 'destino_backup.csv'
 DATA_DIR = BASE_DIR / 'data'
 CHAVE = 'CO_UNIDADE'
-TAMANHOS = [10, 20, 40, 80]
+TAMANHOS = [10, 40, 100, 300, 500, 1000, 2500, 5000]
 
 
 def main():

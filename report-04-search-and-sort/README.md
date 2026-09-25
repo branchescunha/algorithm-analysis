@@ -6,41 +6,44 @@ Implementação e análise de duas estratégias para inserir registros em CSV se
 
 Foi utilizado `cnes_estabelecimentos.csv`, proveniente do Portal de Dados Abertos, com dados do Cadastro Nacional de Estabelecimentos de Saúde (CNES).
 
-A chave escolhida é `CO_UNIDADE` porque, na base analisada:
+A chave escolhida é `CO_UNIDADE` porque, na base integral analisada:
 
 - possui **636.647 valores únicos em 636.647 registros**;
 - **não está ordenada** no arquivo original;
 - contém valores alfanuméricos, por isso é tratada como texto e comparada com `strcmp`.
 
-O arquivo original possui cerca de 220 MiB e não é versionado no Git. Os arquivos efetivamente usados nos experimentos ficam em `data/`.
+O script `reduzir.py` valida essas condições com `isna()`, `is_unique`, `is_monotonic_increasing` e `is_monotonic_decreasing` e gera uma amostra reproduzível de **10.000 registros** (`random_state=42`) para os experimentos.
 
-## Soluções
+O CSV integral possui cerca de 220 MiB e não é versionado no Git. Os arquivos efetivamente usados nos testes ficam em `data/`.
 
-### Solução 1 — Busca sequencial
+## Solução 1 — Busca sequencial
 
-- `seq_iterativa.c`: busca sequencial iterativa;
-- `seq_recursiva.c`: busca sequencial recursiva.
-
-Complexidades da busca:
+- `src/seq_iterativa.c`: busca sequencial iterativa;
+- `src/seq_recursiva.c`: busca sequencial recursiva.
 
 | Implementação | Tempo | Espaço auxiliar |
-| --- | --- | --- |
+| --- | ---: | ---: |
 | Iterativa | `Θ(N)` | `Θ(1)` |
 | Recursiva | `Θ(N)` | `Θ(N)` |
 
-Na versão recursiva:
+Demonstração temporal da versão recursiva:
 
 ```text
-T(N) = T(N - 1) + c = Θ(N)
-S(N) = S(N - 1) + f = Θ(N)
+T(N) = T(N - 1) + c
+T(N) = T(N - 2) + 2c
+...
+T(N) = T(0) + Nc
+T(N) = Θ(N)
 ```
 
-### Solução 2 — MergeSort + busca binária
+Na versão iterativa, o laço executa no máximo `N` comparações, chegando igualmente a `T(N)=Θ(N)`.
 
-As chaves são carregadas para um vetor em RAM. O vetor é ordenado, mas o CSV físico permanece desordenado; registros válidos são sempre anexados ao final do arquivo.
+## Solução 2 — MergeSort + busca binária
+
+As chaves são carregadas em um vetor na RAM. O vetor é ordenado; o CSV físico permanece na ordem original e os registros aceitos são anexados ao final do arquivo.
 
 | Algoritmo | Tempo | Espaço auxiliar |
-| --- | --- | --- |
+| --- | ---: | ---: |
 | MergeSort iterativo | `Θ(N log N)` | `Θ(N)` |
 | MergeSort recursivo | `Θ(N log N)` | `Θ(N)` |
 | Busca binária iterativa | `Θ(log N)` | `Θ(1)` |
@@ -49,62 +52,75 @@ As chaves são carregadas para um vetor em RAM. O vetor é ordenado, mas o CSV f
 Recorrências principais:
 
 ```text
-MergeSort:      T(N) = 2T(N/2) + Θ(N) = Θ(N log N)
-Busca binária:  T(N) = T(N/2) + c = Θ(log N)
+MergeSort:
+T(N) = 2T(N/2) + cN
+T(N) = Θ(N log N)
+
+Busca binária:
+T(N) = T(N/2) + c
+T(N) = Θ(log N)
 ```
 
-Após cada inserção válida, o índice em RAM é mantido ordenado por deslocamento no vetor, operação `Θ(N)` no pior caso.
+Após cada inserção válida, o índice em RAM é mantido ordenado por deslocamento no vetor (`memmove`), operação `Θ(N)` no pior caso.
 
 ## Metodologia experimental
 
 ### Workload principal
 
-A base de destino começa sempre com `N = 1000` registros. Para cada `K`, metade das entradas já existe e metade é nova:
-
-| K | Existentes | Novos |
-| ---: | ---: | ---: |
-| 10 | 5 | 5 |
-| 20 | 10 | 10 |
-| 40 | 20 | 20 |
-| 80 | 40 | 40 |
-
-Antes de cada execução, o destino é restaurado a partir de `data/destino_backup.csv`. Cada cenário de tempo é repetido 20 vezes.
-
-A contagem de comparações é determinística. Para a busca sequencial, neste workload:
+A base de destino começa sempre com `M = 10.000` registros. Para um lote de tamanho `N`, metade das entradas já existe e metade é nova:
 
 ```text
-Cseq(K,N) = (K/2)N + K²/4
+q = N/2
 ```
 
-Com `N = 1000`, os valores teóricos coincidem exatamente com os observados.
+Os lotes usados são:
+
+```text
+N = 10, 40, 100, 300, 500, 1000, 2500, 5000
+```
+
+Cada cenário de tempo é repetido 20 vezes. Antes de cada execução, o arquivo de destino é restaurado a partir de `data/destino_backup.csv`.
+
+Para esse workload, o custo exato da busca sequencial é:
+
+```text
+T(N) = q(q+1)/2 + qM + q(q-1)/2
+T(N) = qM + q²
+T(N) = (N/2)M + N²/4
+```
+
+Com `M=10.000`, os valores teóricos coincidem exatamente com os observados.
+
+| N | Seq. teórica | Seq. observada | Bin. observada | Limite binário |
+| ---: | ---: | ---: | ---: | ---: |
+| 10 | 50.025 | 50.025 | 129 | 140 |
+| 40 | 200.400 | 200.400 | 512 | 560 |
+| 100 | 502.500 | 502.500 | 1.269 | 1.400 |
+| 300 | 1.522.500 | 1.522.500 | 3.857 | 4.200 |
+| 500 | 2.562.500 | 2.562.500 | 6.444 | 7.000 |
+| 1000 | 5.250.000 | 5.250.000 | 12.857 | 14.000 |
+| 2500 | 14.062.500 | 14.062.500 | 32.409 | 35.000 |
+| 5000 | 31.250.000 | 31.250.000 | 65.308 | 70.000 |
 
 ### Experimento variando N
 
-Para tornar visível a diferença `Θ(N)` × `Θ(log N)`, `benchmark_crescimento.py` usa uma chave ausente e bases com:
+Para tornar visível a diferença `Θ(N)` × `Θ(log N)`, `benchmark_crescimento.py` usa uma chave garantidamente ausente em bases com:
 
 ```text
-N = 125, 250, 500, 1000
+N = 125, 500, 1000, 5000, 10000
 ```
-
-Resultados de comparações:
 
 | N | Sequencial | Binária |
 | ---: | ---: | ---: |
 | 125 | 125 | 7 |
-| 250 | 250 | 8 |
 | 500 | 500 | 9 |
 | 1000 | 1000 | 10 |
+| 5000 | 5000 | 13 |
+| 10000 | 10000 | 14 |
 
 Isso evidencia diretamente o crescimento linear e logarítmico.
 
-## Resultados do workload principal
-
-| K | Seq. iterativa | Seq. recursiva | Bin. iterativa | Bin. recursiva |
-| ---: | ---: | ---: | ---: | ---: |
-| 10 | 5.025 | 5.025 | 99 | 99 |
-| 20 | 10.100 | 10.100 | 191 | 191 |
-| 40 | 20.400 | 20.400 | 377 | 377 |
-| 80 | 41.600 | 41.600 | 743 | 743 |
+## Resultados visuais
 
 <p align="center">
   <img src="./charts/teoria_vs_experimento_k.png" width="75%">
@@ -112,6 +128,10 @@ Isso evidencia diretamente o crescimento linear e logarítmico.
 
 <p align="center">
   <img src="./charts/crescimento_n_comparacoes.png" width="75%">
+</p>
+
+<p align="center">
+  <img src="./charts/tempos_algoritmos.png" width="75%">
 </p>
 
 ## Como executar
@@ -130,7 +150,7 @@ python.exe -m pip install pandas numpy matplotlib
 
 ### Preparar a base e os testes
 
-Coloque `cnes_estabelecimentos.csv` na raiz desta pasta e execute:
+Coloque `cnes_estabelecimentos.csv` na raiz de `report-04-search-and-sort` e execute:
 
 ```powershell
 python.exe .\scripts\reduzir.py
@@ -163,45 +183,16 @@ results/crescimento_n.csv
 charts/*.png
 ```
 
-### Execução manual
-
-```powershell
-Copy-Item .\data\destino_backup.csv .\results\destino.csv -Force
-.\seq_iterativa.exe .\data\teste40.csv .\results\destino.csv
-```
-
 ## Estrutura
 
 ```text
 report-04-search-and-sort/
 ├── charts/
-│   ├── comparacoes_buscas.png
-│   ├── crescimento_n_comparacoes.png
-│   ├── mergesort_crescimento_n.png
-│   ├── teoria_vs_experimento_k.png
-│   └── tempos_algoritmos.png
 ├── data/
-│   ├── destino_backup.csv
-│   └── teste*.csv
 ├── report/
-│   ├── Relatorio-04-Busca-Ordenacao.docx
-│   └── Relatorio-04-Busca-Ordenacao.pdf
 ├── results/
-│   ├── comparacao_teorica.csv
-│   ├── crescimento_n.csv
-│   └── estatisticas.csv
 ├── scripts/
-│   ├── benchmark.py
-│   ├── benchmark_crescimento.py
-│   ├── gerar.py
-│   ├── plot.py
-│   └── reduzir.py
 ├── src/
-│   ├── common.h
-│   ├── seq_iterativa.c
-│   ├── seq_recursiva.c
-│   ├── bin_iterativa.c
-│   └── bin_recursiva.c
 ├── .gitignore
 └── README.md
 ```
