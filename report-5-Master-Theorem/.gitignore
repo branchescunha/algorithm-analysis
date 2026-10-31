@@ -1,0 +1,18 @@
+# Executáveis e objetos compilados do C 
+*.exe
+*.out
+*.o
+*.obj
+*.bin
+
+# Cache e ambientes virtuais do Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Arquivos temporários do Word e Sistema Operacional
+~$*.docx
+.DS_Store
+Thumbs.db
